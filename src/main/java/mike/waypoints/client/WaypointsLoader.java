@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class WaypointsLoader {
+public class WaypointsLoader implements SessionEventListener {
 
     MinecraftClient client = WaypointsClient.INSTANCE.client;
     File worldWaypointsDir;
@@ -19,7 +19,12 @@ public class WaypointsLoader {
     public Waypoint lastDeathWaypoint = null;
     public Waypoint navigatingWaypoint = null;
 
-    public WaypointsLoader(GameSession session) {
+    public WaypointsLoader() {
+        WaypointsClient.INSTANCE.game.setSessionEventListener(this);
+    }
+
+    @Override
+    public void onStartGameSession(GameSession session) {
         String worldIdentifier;
         if (session.isRemoteServer())
             worldIdentifier = client.getCurrentServerEntry().address;
@@ -40,6 +45,12 @@ public class WaypointsLoader {
         } else  {
             LoadWaypoints();
         }
+    }
+
+    @Override
+    public void onLeaveGameSession(GameSession session) {
+        navigatingWaypoint = null;
+        lastDeathWaypoint = null;
     }
 
     void LoadWaypoints() {

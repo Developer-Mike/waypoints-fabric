@@ -28,13 +28,7 @@ public class WaypointsClient implements ClientModInitializer {
     public void onInitializeClient() {
         client = MinecraftClient.getInstance();
         game = client.getGame();
+        loader = new WaypointsLoader();
         new WaypointCommands();
-
-        WaypointsClient.INSTANCE.game.setSessionEventListener(new SessionEventListener() {
-            @Override
-            public void onStartGameSession(GameSession session) {
-                loader = new WaypointsLoader(session);
-            }
-        });
     }
 }
