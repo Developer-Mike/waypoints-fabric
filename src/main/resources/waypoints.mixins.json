@@ -6,7 +6,7 @@
   "mixins": [
   ],
   "client": [
-    "PlayerEntityMixin"
+    "PlayerDeathMixin"
   ],
   "injectors": {
     "defaultRequire": 1

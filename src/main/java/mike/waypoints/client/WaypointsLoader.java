@@ -49,6 +49,7 @@ public class WaypointsLoader implements SessionEventListener {
 
     @Override
     public void onLeaveGameSession(GameSession session) {
+        waypoints = new ArrayList<>();
         navigatingWaypoint = null;
         lastDeathWaypoint = null;
     }
