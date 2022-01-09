@@ -35,18 +35,18 @@ public class WaypointCommands {
                         .then(ClientCommandManager.literal("get")
                             .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
                                     getCommand(ctx)
-                            )))
+                            )).suggests(new WaypointSuggestionProvider()))
                         )
                         .then(ClientCommandManager.literal("remove")
                             .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
                                     removeCommand(ctx)
-                            )))
+                            )).suggests(new WaypointSuggestionProvider()))
                         )
                         .then(ClientCommandManager.literal("nav")
                             .then(ClientCommandManager.literal("start")
                                 .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
                                         navigateCommand(ctx)
-                                )))
+                                )).suggests(new WaypointSuggestionProvider()))
                             )
                             .then(ClientCommandManager.literal("stop").executes((ctx ->
                                 stopNavigateCommand(ctx)
@@ -95,7 +95,7 @@ public class WaypointCommands {
             WaypointsClient.INSTANCE.loader.AddWaypoint(waypoint);
             SendWaypoint(player, waypoint);
         } else {
-            SendErrorMessage(player, "Waypoint already exists.");
+            SendErrorMessage(player, "Waypoint '" + waypointName + "' already exists.");
 
             return 0;
         }
@@ -110,9 +110,9 @@ public class WaypointCommands {
 
         boolean success = WaypointsClient.INSTANCE.loader.RemoveWaypoint(waypointName);
         if (success) {
-            SendSuccessMessage(player, "Removed waypoint.");
+            SendSuccessMessage(player, "Removed waypoint '" +waypointName + "'.");
         } else {
-            SendErrorMessage(player, "No such Waypoint.");
+            SendErrorMessage(player, "No Waypoint named '" + waypointName + "' found.");
 
             return -1;
         }
@@ -129,7 +129,7 @@ public class WaypointCommands {
         if (waypoint != null) {
             SendWaypoint(player, waypoint);
         } else {
-            SendErrorMessage(player, "No such Waypoint found.");
+            SendErrorMessage(player, "No Waypoint named '" + waypointName + "' found.");
 
             return -1;
         }
@@ -145,9 +145,9 @@ public class WaypointCommands {
         Waypoint waypoint = WaypointsClient.INSTANCE.loader.GetWaypoint(waypointName);
         if (waypoint != null) {
             WaypointsClient.INSTANCE.loader.navigatingWaypoint = waypoint;
-            SendSuccessMessage(player, "Navigation started.");
+            SendSuccessMessage(player, "Navigation to '" + waypointName + "' started.");
         } else {
-            SendErrorMessage(player, "No Waypoint with this name found.");
+            SendErrorMessage(player, "No Waypoint named '" + waypointName + "' found.");
 
             return -1;
         }
@@ -201,15 +201,15 @@ public class WaypointCommands {
     }
 
     void SendWaypoint(ClientPlayerEntity player, Waypoint waypoint) {
-        MutableText nameText = new LiteralText(waypoint.name).formatted(Formatting.YELLOW);
-        MutableText positionText = new LiteralText("[" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "]").formatted(Formatting.GREEN);
+        MutableText nameText = new LiteralText(waypoint.name).formatted(Formatting.WHITE);
+        MutableText positionText = new LiteralText("[" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "]").formatted(Formatting.WHITE, Formatting.BOLD);
 
-        MutableText worldNameText = new LiteralText(waypoint.worldName.split(":")[1]).formatted(Formatting.RED);
+        MutableText worldNameText = new LiteralText(waypoint.worldName.split(":")[1]).formatted(Formatting.GRAY);
         MutableText separator = new LiteralText(" | ");
 
         MutableText joinedText = nameText.append(separator).append(positionText).append(separator).append(worldNameText);
-        joinedText.styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + commandPrefix + " navigate " + waypoint.name)))
-                .styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Navigate"))));
+        joinedText.styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + commandPrefix + " nav start " + waypoint.name)))
+                .styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Start Navigation"))));
 
         player.sendMessage(joinedText, false);
     }
