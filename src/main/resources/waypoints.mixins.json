@@ -6,7 +6,8 @@
   "mixins": [
   ],
   "client": [
-    "PlayerDeathMixin"
+    "PlayerDeathMixin",
+    "WaypointNavigator"
   ],
   "injectors": {
     "defaultRequire": 1

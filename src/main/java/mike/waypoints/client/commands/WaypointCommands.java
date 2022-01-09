@@ -10,14 +10,21 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DefaultPosArgument;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+
+import javax.swing.text.AttributeSet;
+import javax.swing.text.Style;
 
 public class WaypointCommands {
     final String commandPrefix = "wp";
 
     public WaypointCommands() {
-        ClientCommandManager.DISPATCHER.register(ClientCommandManager.literal(commandPrefix)
+        ClientCommandManager.DISPATCHER.register(ClientCommandManager.literal(commandPrefix).executes(null)
                         .then(ClientCommandManager.literal("all").executes((this::getAllWaypoints)))
                         .then(ClientCommandManager.literal("add")
                             .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
@@ -80,8 +87,9 @@ public class WaypointCommands {
             waypoint = new Waypoint(waypointName, dimension, position);
 
             WaypointsClient.INSTANCE.loader.AddWaypoint(waypoint);
+            SendWaypoint(player, waypoint);
         } else {
-            //TODO: Exists already
+            SendErrorMessage(player, "Waypoint already exists.");
 
             return 0;
         }
@@ -90,15 +98,15 @@ public class WaypointCommands {
     }
 
     private int removeCommand(CommandContext<FabricClientCommandSource> ctx) {
-        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity)) return -1;
+        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity player)) return -1;
 
         String waypointName = ctx.getArgument("name", String.class);
 
         boolean success = WaypointsClient.INSTANCE.loader.RemoveWaypoint(waypointName);
         if (success) {
-            //TODO: Success delete
+            SendSuccessMessage(player, "Removed waypoint.");
         } else {
-            //TODO: Not exists
+            SendErrorMessage(player, "No such Waypoint.");
 
             return -1;
         }
@@ -132,7 +140,7 @@ public class WaypointCommands {
         if (waypoint != null) {
             WaypointsClient.INSTANCE.loader.navigatingWaypoint = waypoint;
         } else {
-            //TODO: Error Not found
+            SendErrorMessage(player, "No Waypoint with this name found.");
 
             return -1;
         }
@@ -141,14 +149,16 @@ public class WaypointCommands {
     }
 
     private int saveDeathCommand(CommandContext<FabricClientCommandSource> ctx) {
-        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity)) return -1;
+        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity player)) return -1;
 
         Waypoint waypoint = WaypointsClient.INSTANCE.loader.lastDeathWaypoint;
         if (waypoint != null) {
             WaypointsClient.INSTANCE.loader.RemoveWaypoint(waypoint.name);
             WaypointsClient.INSTANCE.loader.AddWaypoint(waypoint);
+
+            SendWaypoint(player, waypoint);
         } else {
-            //TODO: Error no last death
+            SendErrorMessage(player, "You have no unsaved Death.");
 
             return -1;
         }
@@ -156,7 +166,21 @@ public class WaypointCommands {
         return 1;
     }
 
+    void SendSuccessMessage(ClientPlayerEntity player, String message) {
+        player.sendMessage(new LiteralText(message).formatted(Formatting.GREEN), false);
+    }
+
+    void SendErrorMessage(ClientPlayerEntity player, String message) {
+        player.sendMessage(new LiteralText(message).formatted(Formatting.RED), false);
+    }
+
     void SendWaypoint(ClientPlayerEntity player, Waypoint waypoint) {
-        player.sendMessage(Text.of(waypoint.name + " | [" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "] | " + waypoint.worldName.split(":")[1]), false);
+        MutableText nameText = new LiteralText(waypoint.name).formatted(Formatting.BLUE);
+        MutableText positionText = new LiteralText("[" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "]").formatted(Formatting.YELLOW)
+                .styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/wp navigate " + waypoint.name)));
+        MutableText worldNameText = new LiteralText(waypoint.worldName.split(":")[1]).formatted(Formatting.GREEN);
+        MutableText separator = new LiteralText(" | ");
+
+        player.sendMessage(nameText.append(separator).append(positionText).append(separator).append(worldNameText), false);
     }
 }
