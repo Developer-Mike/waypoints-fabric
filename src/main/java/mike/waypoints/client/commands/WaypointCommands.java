@@ -10,10 +10,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DefaultPosArgument;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
@@ -21,7 +18,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.Style;
 
 public class WaypointCommands {
-    final String commandPrefix = "wp";
+    final String commandPrefix = "pos";
 
     public WaypointCommands() {
         ClientCommandManager.DISPATCHER.register(ClientCommandManager.literal(commandPrefix).executes(null)
@@ -50,8 +47,12 @@ public class WaypointCommands {
                                     navigateCommand(ctx)
                             )))
                         )
+                        .then(ClientCommandManager.literal("stop").executes((ctx ->
+                                stopNavigateCommand(ctx)
+                            ))
+                        )
                         .then(ClientCommandManager.literal("death").executes((ctx ->
-                                    saveDeathCommand(ctx)
+                                saveDeathCommand(ctx)
                             ))
                         )
         );
@@ -123,7 +124,7 @@ public class WaypointCommands {
         if (waypoint != null) {
             SendWaypoint(player, waypoint);
         } else {
-            //TODO: Error Not found
+            SendErrorMessage(player, "No such Waypoint found.");
 
             return -1;
         }
@@ -139,11 +140,21 @@ public class WaypointCommands {
         Waypoint waypoint = WaypointsClient.INSTANCE.loader.GetWaypoint(waypointName);
         if (waypoint != null) {
             WaypointsClient.INSTANCE.loader.navigatingWaypoint = waypoint;
+            SendSuccessMessage(player, "Navigation started.");
         } else {
             SendErrorMessage(player, "No Waypoint with this name found.");
 
             return -1;
         }
+
+        return 1;
+    }
+
+    private int stopNavigateCommand(CommandContext<FabricClientCommandSource> ctx) {
+        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity player)) return -1;
+
+        WaypointsClient.INSTANCE.loader.navigatingWaypoint = null;
+        SendSuccessMessage(player, "Navigation stopped.");
 
         return 1;
     }
@@ -156,6 +167,7 @@ public class WaypointCommands {
             WaypointsClient.INSTANCE.loader.RemoveWaypoint(waypoint.name);
             WaypointsClient.INSTANCE.loader.AddWaypoint(waypoint);
 
+            SendSuccessMessage(player, "Saving last death Successful");
             SendWaypoint(player, waypoint);
         } else {
             SendErrorMessage(player, "You have no unsaved Death.");
@@ -175,12 +187,16 @@ public class WaypointCommands {
     }
 
     void SendWaypoint(ClientPlayerEntity player, Waypoint waypoint) {
-        MutableText nameText = new LiteralText(waypoint.name).formatted(Formatting.BLUE);
-        MutableText positionText = new LiteralText("[" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "]").formatted(Formatting.YELLOW)
-                .styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/wp navigate " + waypoint.name)));
-        MutableText worldNameText = new LiteralText(waypoint.worldName.split(":")[1]).formatted(Formatting.GREEN);
+        MutableText nameText = new LiteralText(waypoint.name).formatted(Formatting.YELLOW);
+        MutableText positionText = new LiteralText("[" + waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ() + "]").formatted(Formatting.GREEN);
+
+        MutableText worldNameText = new LiteralText(waypoint.worldName.split(":")[1]).formatted(Formatting.RED);
         MutableText separator = new LiteralText(" | ");
 
-        player.sendMessage(nameText.append(separator).append(positionText).append(separator).append(worldNameText), false);
+        MutableText joinedText = nameText.append(separator).append(positionText).append(separator).append(worldNameText);
+        joinedText.styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + commandPrefix + " navigate " + waypoint.name)))
+                .styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Navigate"))));
+
+        player.sendMessage(joinedText, false);
     }
 }
