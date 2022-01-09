@@ -42,18 +42,23 @@ public class WaypointCommands {
                                     removeCommand(ctx)
                             )))
                         )
-                        .then(ClientCommandManager.literal("navigate")
-                            .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
-                                    navigateCommand(ctx)
+                        .then(ClientCommandManager.literal("nav")
+                            .then(ClientCommandManager.literal("start")
+                                .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes((ctx ->
+                                        navigateCommand(ctx)
+                                )))
+                            )
+                            .then(ClientCommandManager.literal("stop").executes((ctx ->
+                                stopNavigateCommand(ctx)
                             )))
                         )
-                        .then(ClientCommandManager.literal("stop").executes((ctx ->
-                                stopNavigateCommand(ctx)
-                            ))
-                        )
-                        .then(ClientCommandManager.literal("death").executes((ctx ->
+                        .then(ClientCommandManager.literal("death")
+                            .then(ClientCommandManager.literal("save").executes((ctx ->
                                 saveDeathCommand(ctx)
-                            ))
+                            )))
+                            .then(ClientCommandManager.literal("nav").executes((ctx ->
+                                navigateDeathCommand(ctx)
+                            )))
                         )
         );
     }
@@ -146,6 +151,15 @@ public class WaypointCommands {
 
             return -1;
         }
+
+        return 1;
+    }
+
+    private int navigateDeathCommand(CommandContext<FabricClientCommandSource> ctx) {
+        if (!(ctx.getSource().getEntity() instanceof ClientPlayerEntity player)) return -1;
+
+        saveDeathCommand(ctx);
+        WaypointsClient.INSTANCE.loader.navigatingWaypoint = WaypointsClient.INSTANCE.loader.GetWaypoint("death");
 
         return 1;
     }
