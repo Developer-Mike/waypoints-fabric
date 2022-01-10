@@ -14,9 +14,6 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
-import javax.swing.text.AttributeSet;
-import javax.swing.text.Style;
-
 public class WaypointCommands {
     final String commandPrefix = "pos";
 
